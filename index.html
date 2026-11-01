@@ -1,0 +1,1195 @@
+```html
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AGT - Controle Financeiro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#0B0F17] text-slate-200 min-h-screen">
+  <!-- ===== Top-level App (oculta no login) ===== -->
+  <div id="app" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-slate-100">
+            AGT <span class="text-emerald-400">•</span> Empréstimos & Parcelas
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">
+            Painel para controlar valores, vencimentos e cobranças.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btnLogout"
+            class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+            Sair
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard cards -->
+    <div class="max-w-7xl mx-auto px-4 pb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-slate-400">Total Emprestado Ativo</p>
+            <span class="text-emerald-400 text-sm font-bold">Ativo</span>
+          </div>
+          <div class="mt-2 text-2xl font-extrabold" id="cardTotalEmprestado">R$ 0,00</div>
+          <div class="mt-3 text-xs text-slate-500">Principal restante (exato)</div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-slate-400">Total de Juros a Receber</p>
+            <span class="text-emerald-300 text-sm font-bold">Juros</span>
+          </div>
+          <div class="mt-2 text-2xl font-extrabold" id="cardTotalJuros">R$ 0,00</div>
+          <div class="mt-3 text-xs text-slate-500">Juros restantes (exato)</div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-slate-400">Total Geral a Receber</p>
+            <span class="text-emerald-200 text-sm font-bold">Receber</span>
+          </div>
+          <div class="mt-2 text-2xl font-extrabold" id="cardTotalGeral">R$ 0,00</div>
+          <div class="mt-3 text-xs text-slate-500">Parcelas pendentes</div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-slate-400">Total Já Faturado</p>
+            <span class="text-emerald-400 text-sm font-bold">Pago</span>
+          </div>
+          <div class="mt-2 text-2xl font-extrabold" id="cardTotalFaturado">R$ 0,00</div>
+          <div class="mt-3 text-xs text-slate-500">Somatório quitado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main layout -->
+    <div class="max-w-7xl mx-auto px-4 pb-10">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <!-- Form (Cadastro) -->
+        <section class="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 sm:p-5">
+          <h2 class="text-lg sm:text-xl font-bold text-slate-100">Cadastro de Empréstimo</h2>
+          <p class="text-sm text-slate-400 mt-1">Preencha os dados e o sistema calcula as parcelas automaticamente.</p>
+
+          <form id="loanForm" class="mt-4 space-y-3">
+            <div>
+              <label class="block text-sm text-slate-300 font-semibold mb-1">Nome do Devedor</label>
+              <input id="debtorName" type="text" required placeholder="Ex.: João da Silva"
+                class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-300 font-semibold mb-1">Telefone do Devedor</label>
+              <input id="debtorPhone" type="text" inputmode="tel" required
+                placeholder="Ex.: 11999999999 ou +55 11 99999-9999"
+                class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <p class="text-xs text-slate-500 mt-1">
+                Aceita com ou sem DDI. O WhatsApp será montado com DDI 55 (BR) se não existir.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-300 font-semibold mb-1">Valor Emprestado (R$)</label>
+              <input id="loanAmount" type="text" required inputmode="decimal" placeholder="Ex.: 1000,00"
+                class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm text-slate-300 font-semibold mb-1">Data do Empréstimo</label>
+                <input id="loanDate" type="date" required
+                  class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+
+              <div>
+                <label class="block text-sm text-slate-300 font-semibold mb-1">Taxa de Juros</label>
+                <select id="loanInterestRate"
+                  class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="10">10%</option>
+                  <option value="15">15%</option>
+                  <option value="20">20%</option>
+                  <option value="25">25%</option>
+                  <option value="30">30%</option>
+                  <option value="35">35%</option>
+                  <option value="40">40%</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm text-slate-300 font-semibold mb-1">Parcelamento</label>
+                <select id="parcelCount"
+                  class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="1">1x</option>
+                  <option value="2">2x</option>
+                  <option value="3">3x</option>
+                  <option value="4">4x</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm text-slate-300 font-semibold mb-1">Primeiro vencimento</label>
+                <div id="firstDuePreview"
+                  class="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100">--</div>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-sm text-slate-400">Valor Total a Receber</p>
+                <p class="text-emerald-300 font-extrabold" id="totalToReceivePreview">R$ 0,00</p>
+              </div>
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <p class="text-sm text-slate-400">Valor de cada Parcela</p>
+                <p class="text-emerald-300 font-extrabold" id="parcelValuePreview">R$ 0,00</p>
+              </div>
+              <p class="text-xs text-slate-500 mt-2">
+                O vencimento é calculado em ciclos de 30 dias a partir da data do empréstimo.
+              </p>
+            </div>
+
+            <div class="pt-1 flex gap-2">
+              <button type="submit"
+                class="flex-1 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold">
+                Salvar Empréstimo
+              </button>
+            </div>
+          </form>
+
+          <div class="mt-4">
+            <p id="formMessage" class="text-sm hidden"></p>
+          </div>
+
+          <!-- Ações globais -->
+          <div class="mt-6">
+            <h3 class="text-md font-bold text-slate-100">Ações Globais</h3>
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button id="btnClearAll"
+                class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+                Apagar Todos os Registros
+              </button>
+
+              <button id="btnExport"
+                class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+                Exportar Backup
+              </button>
+
+              <label class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold cursor-pointer text-center">
+                Importar Backup
+                <input id="importFile" type="file" accept="application/json" class="hidden" />
+              </label>
+
+              <button id="btnSeedDemo"
+                class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+                (Opcional) Inserir Exemplo
+              </button>
+            </div>
+            <p class="text-xs text-slate-500 mt-3">Importar substitui os dados atuais (com confirmação).</p>
+          </div>
+        </section>
+
+        <!-- List -->
+        <section class="lg:col-span-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 sm:p-5">
+          <h2 class="text-lg sm:text-xl font-bold text-slate-100">Empréstimos Ativos</h2>
+          <p class="text-sm text-slate-400 mt-1">Busque, filtre e quite parcelas conforme forem vencendo.</p>
+
+          <div class="mt-4 space-y-3">
+            <div class="flex flex-col sm:flex-row gap-3">
+              <div class="flex-1">
+                <label class="block text-sm text-slate-300 font-semibold mb-1">Buscar por nome</label>
+                <input id="searchInput" type="text" placeholder="Digite o nome do devedor..."
+                  class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+
+              <div class="sm:w-56">
+                <label class="block text-sm text-slate-300 font-semibold mb-1">Status</label>
+                <div class="flex gap-2 flex-wrap">
+                  <button data-filter="all" class="filterBtn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+                    Todos
+                  </button>
+                  <button data-filter="ontime" class="filterBtn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+                    No Prazo
+                  </button>
+                  <button data-filter="soon" class="filterBtn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+                    Próximo ao Vencimento
+                  </button>
+                  <button data-filter="overdue" class="filterBtn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-sm font-semibold">
+                    Vencidos
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-xs text-slate-500">
+              Mostrando <span id="activeCount">0</span> empréstimos ativos.
+            </div>
+          </div>
+
+          <div id="loansGrid" class="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-3"></div>
+
+          <div id="emptyState" class="mt-6 hidden">
+            <div class="rounded-2xl border border-dashed border-slate-700 p-5 text-center">
+              <p class="font-bold text-slate-100">Nenhum empréstimo ativo</p>
+              <p class="text-sm text-slate-400 mt-1">Cadastre um empréstimo para começar.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Quitados (recolhível) -->
+      <div class="mt-6">
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/40">
+          <button id="toggleHistory" class="w-full flex items-center justify-between gap-3 px-4 py-4">
+            <div class="text-left">
+              <h3 class="text-lg font-bold text-slate-100">Histórico de Quitados</h3>
+              <p class="text-sm text-slate-400 mt-1">Consultas e controle de lucro.</p>
+            </div>
+            <div class="text-emerald-400 font-extrabold text-lg" id="historyChevron">˅</div>
+          </button>
+
+          <div id="historyPanel" class="px-4 pb-4 hidden">
+            <div class="mt-2 text-xs text-slate-500">
+              Quitados: <span id="historyCount">0</span>
+            </div>
+            <div id="historyGrid" class="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-3"></div>
+            <div id="historyEmpty" class="mt-6 hidden">
+              <div class="rounded-2xl border border-dashed border-slate-700 p-5 text-center">
+                <p class="font-bold text-slate-100">Sem quitados ainda</p>
+                <p class="text-sm text-slate-400 mt-1">Quando quitar 100%, eles aparecem aqui.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Login Screen ===== -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6 shadow-2xl">
+      <div class="text-center">
+        <h1 class="text-2xl font-extrabold text-slate-100">
+          AGT <span class="text-emerald-400">•</span> Controle Financeiro
+        </h1>
+        <p class="text-sm text-slate-400 mt-2">Acesse com sua senha.</p>
+      </div>
+
+      <div class="mt-5 space-y-3">
+        <div id="loginInfo" class="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">Carregando...</div>
+
+        <div id="createPassBox" class="hidden">
+          <label class="block text-sm text-slate-300 font-semibold mb-1">Definir Senha (1º acesso)</label>
+          <input id="createPass" type="password" placeholder="Digite uma senha"
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <label class="block text-sm text-slate-300 font-semibold mb-1 mt-3">Confirmar Senha</label>
+          <input id="confirmPass" type="password" placeholder="Repita a senha"
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+
+        <div id="loginPassBox">
+          <label class="block text-sm text-slate-300 font-semibold mb-1">Senha</label>
+          <input id="loginPass" type="password" placeholder="Digite sua senha"
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+
+        <div id="loginMessage" class="text-sm text-slate-300 hidden"></div>
+
+        <button id="loginBtn" class="w-full px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold">
+          Entrar
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-4 text-center">A senha é armazenada como hash SHA-256 no seu navegador (localStorage).</p>
+    </div>
+  </div>
+
+<script>
+/* =========================================================
+   AGT - localStorage + Ajustes solicitados
+   - Total Emprestado Ativo: principal restante exato
+   - WhatsApp: suporta telefone com/sem DDI (+55 etc.)
+   ========================================================= */
+
+const STORAGE_KEYS = {
+  PASSWORD_HASH: "agt_password_hash_v1",
+  LOANS: "agt_loans_v1"
+};
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function pad2(n) { return String(n).padStart(2, "0"); }
+
+function toISODateLocal(date) {
+  const y = date.getFullYear();
+  const m = pad2(date.getMonth() + 1);
+  const d = pad2(date.getDate());
+  return `${y}-${m}-${d}`;
+}
+
+function parseDateFromISO(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0, 0);
+}
+
+function addDaysLocal(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function daysBetween(a, b) {
+  const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((utcB - utcA) / MS_PER_DAY);
+}
+
+function formatCurrencyBRL(value) {
+  const n = Number(value || 0);
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
+}
+
+function normalizeMoneyInput(str) {
+  if (typeof str !== "string") return "";
+  let s = str.trim();
+  s = s.replace(/\s/g, "");
+  if (s.includes(",") && s.includes(".")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (s.includes(",")) {
+    s = s.replace(",", ".");
+  }
+  s = s.replace(/[^0-9.]/g, "");
+  return s;
+}
+
+function moneyToNumber(str) {
+  const normalized = normalizeMoneyInput(str);
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function roundMoney(n) {
+  return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+}
+
+function uuid() {
+  return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+}
+
+/* =========================
+   WhatsApp phone normalizer (solução pedida)
+========================= */
+function normalizePhoneForWhatsApp(phoneRaw, defaultCountryCode = "55") {
+  // Mantém somente dígitos
+  let digits = String(phoneRaw || "").replace(/\D/g, "");
+
+  // Se já parece ter DDI (ex.: 55...), mantém
+  if (digits.startsWith(defaultCountryCode)) return digits;
+
+  // Se não tem DDI, assume BR (+55)
+  return defaultCountryCode + digits;
+}
+
+function formatAmountBR(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+/* =========================
+   Criptografia de Senha (SHA-256)
+========================= */
+async function sha256Hex(text) {
+  const enc = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest("SHA-256", enc);
+  const hashArray = Array.from(new Uint8Array(digest));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getStoredPasswordHash() {
+  return localStorage.getItem(STORAGE_KEYS.PASSWORD_HASH);
+}
+
+/* =========================
+   Modelo de Dados (localStorage)
+========================= */
+function loadLoans() {
+  const raw = localStorage.getItem(STORAGE_KEYS.LOANS);
+  if (!raw) return [];
+  try {
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLoans(loans) {
+  localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(loans));
+}
+
+/*
+Loan:
+{
+  id,
+  debtorName,
+  debtorPhone, // string (pode ter +55 ou sem)
+  loanAmount, // principal
+  loanDateISO,
+  interestRatePercent,
+  parcelCount,
+  parcelValue, // valor nominal calculado
+  totalToReceive, // principal + juros
+  parcels: [{index,dueDateISO,amount,paid,paidAtISO}],
+  createdAtISO
+}
+*/
+
+function findNextUnpaidParcel(loan) {
+  return (loan.parcels || []).find(p => !p.paid) || null;
+}
+function isLoanFullyPaid(loan) {
+  return (loan.parcels || []).every(p => p.paid);
+}
+
+function classifyParcelStatus(nextParcel, now) {
+  if (!nextParcel) return "none";
+  const due = parseDateFromISO(nextParcel.dueDateISO);
+  const diffDays = daysBetween(now, due); // now -> due
+  if (diffDays < 0) return "overdue";
+  if (diffDays <= 3) return "soon";
+  return "ontime";
+}
+
+function computeLoanTotals(loan) {
+  const parcels = loan.parcels || [];
+  const totalPaid = parcels.reduce((sum, p) => sum + (p.paid ? p.amount : 0), 0);
+  const totalAll = parcels.reduce((sum, p) => sum + p.amount, 0);
+  const remaining = totalAll - totalPaid;
+
+  const principal = loan.loanAmount || 0;
+  const totalToReceive = loan.totalToReceive || 0;
+  const jurosTotal = Math.max(0, totalToReceive - principal);
+
+  return { totalPaid, totalAll, remaining, principal, jurosTotal };
+}
+
+/* =========================
+   Login UI
+========================= */
+const loginScreen = document.getElementById("loginScreen");
+const app = document.getElementById("app");
+
+const createPassBox = document.getElementById("createPassBox");
+const loginPassBox = document.getElementById("loginPassBox");
+const loginInfo = document.getElementById("loginInfo");
+const loginMessage = document.getElementById("loginMessage");
+const loginBtn = document.getElementById("loginBtn");
+
+const createPass = document.getElementById("createPass");
+const confirmPass = document.getElementById("confirmPass");
+const loginPass = document.getElementById("loginPass");
+
+function showLoginMessage(text, type) {
+  loginMessage.classList.remove("hidden");
+  let cls = "text-slate-300";
+  if (type === "ok") cls = "text-emerald-300";
+  if (type === "err") cls = "text-red-300";
+  loginMessage.className = "text-sm " + cls;
+  loginMessage.textContent = text;
+}
+
+async function initLogin() {
+  const hash = getStoredPasswordHash();
+  loginMessage.classList.add("hidden");
+  if (!hash) {
+    createPassBox.classList.remove("hidden");
+    loginPassBox.classList.add("hidden");
+    loginInfo.textContent = "Primeiro acesso detectado. Defina uma senha para proteger o AGT neste navegador.";
+    loginBtn.textContent = "Salvar Senha & Entrar";
+  } else {
+    createPassBox.classList.add("hidden");
+    loginPassBox.classList.remove("hidden");
+    loginInfo.textContent = "Acesse com sua senha para continuar.";
+    loginBtn.textContent = "Entrar";
+  }
+}
+
+async function handleLogin() {
+  const hash = getStoredPasswordHash();
+
+  if (!hash) {
+    const p1 = (createPass.value || "").trim();
+    const p2 = (confirmPass.value || "").trim();
+    if (!p1 || p1.length < 4) return showLoginMessage("Informe uma senha com pelo menos 4 caracteres.", "err");
+    if (p1 !== p2) return showLoginMessage("As senhas não conferem. Verifique e tente novamente.", "err");
+
+    const newHash = await sha256Hex(p1);
+    localStorage.setItem(STORAGE_KEYS.PASSWORD_HASH, newHash);
+    showLoginMessage("Senha definida com sucesso! Carregando o sistema...", "ok");
+    setTimeout(() => startAppAfterAuth(), 400);
+    return;
+  }
+
+  const p = (loginPass.value || "").trim();
+  if (!p) return showLoginMessage("Digite sua senha.", "err");
+
+  const candidateHash = await sha256Hex(p);
+  if (candidateHash !== hash) return showLoginMessage("Senha incorreta. Tente novamente.", "err");
+
+  showLoginMessage("Login OK! Carregando o sistema...", "ok");
+  setTimeout(() => startAppAfterAuth(), 200);
+}
+
+loginBtn.addEventListener("click", handleLogin);
+document.addEventListener("keydown", (e) => { if (e.key === "Enter") handleLogin(); });
+
+/* =========================
+   Toast
+========================= */
+const toast = document.createElement("div");
+toast.className = "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl border text-sm hidden";
+toast.style.background = "rgba(15, 23, 42, 0.95)";
+toast.style.borderColor = "rgba(31, 41, 55, 0.9)";
+document.body.appendChild(toast);
+
+let toastTimer = null;
+function showToast(msg, type) {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.textContent = msg;
+  toast.classList.remove("hidden","text-emerald-300","text-red-300");
+  if (type === "ok") toast.classList.add("text-emerald-300");
+  else if (type === "err") toast.classList.add("text-red-300");
+  toastTimer = setTimeout(() => toast.classList.add("hidden"), 2200);
+}
+
+/* =========================
+   App state
+========================= */
+let allLoans = [];
+let currentFilter = "all";
+
+/* =========================
+   UI elements
+========================= */
+const loanForm = document.getElementById("loanForm");
+const formMessage = document.getElementById("formMessage");
+
+const debtorName = document.getElementById("debtorName");
+const debtorPhone = document.getElementById("debtorPhone");
+const loanAmount = document.getElementById("loanAmount");
+const loanDate = document.getElementById("loanDate");
+const loanInterestRate = document.getElementById("loanInterestRate");
+const parcelCount = document.getElementById("parcelCount");
+
+const firstDuePreview = document.getElementById("firstDuePreview");
+const totalToReceivePreview = document.getElementById("totalToReceivePreview");
+const parcelValuePreview = document.getElementById("parcelValuePreview");
+
+const loansGrid = document.getElementById("loansGrid");
+const emptyState = document.getElementById("emptyState");
+const activeCount = document.getElementById("activeCount");
+
+const toggleHistory = document.getElementById("toggleHistory");
+const historyChevron = document.getElementById("historyChevron");
+const historyPanel = document.getElementById("historyPanel");
+const historyGrid = document.getElementById("historyGrid");
+const historyEmpty = document.getElementById("historyEmpty");
+const historyCount = document.getElementById("historyCount");
+
+/* =========================
+   Form previews
+========================= */
+function setFormDefaultDate() {
+  loanDate.value = toISODateLocal(new Date());
+}
+
+function updatePreviews() {
+  const amount = moneyToNumber(loanAmount.value);
+  const rate = Number(loanInterestRate.value || 0);
+  const parcelsN = Number(parcelCount.value || 1);
+  const loanISO = loanDate.value;
+
+  if (!loanISO) {
+    firstDuePreview.textContent = "--";
+    totalToReceivePreview.textContent = "R$ 0,00";
+    parcelValuePreview.textContent = "R$ 0,00";
+    return;
+  }
+
+  const total = roundMoney(amount + amount * (rate / 100));
+  const parcelValue = parcelsN > 0 ? roundMoney(total / parcelsN) : 0;
+
+  const d = parseDateFromISO(loanISO);
+  const firstDue = addDaysLocal(d, 30);
+
+  firstDuePreview.textContent = toISODateLocal(firstDue);
+  totalToReceivePreview.textContent = formatCurrencyBRL(total);
+  parcelValuePreview.textContent = formatCurrencyBRL(parcelValue);
+}
+
+function resetForm() {
+  debtorName.value = "";
+  debtorPhone.value = "";
+  loanAmount.value = "";
+  setFormDefaultDate();
+  loanInterestRate.value = "10";
+  parcelCount.value = "1";
+  updatePreviews();
+}
+
+function showFormError(msg) {
+  formMessage.classList.remove("hidden");
+  formMessage.className = "text-sm text-red-300 mt-1";
+  formMessage.textContent = msg;
+}
+
+/* =========================
+   ESCAPE
+========================= */
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[s]));
+}
+
+/* =========================
+   DASHBOARD STATS (ajustado: principal restante EXATO)
+   ========================= */
+function calcDashboardStats() {
+  const active = allLoans.filter(l => !isLoanFullyPaid(l));
+
+  let totalEmprestadoAtivo = 0;
+  let totalJurosPendentes = 0;
+  let totalGeralAReceber = 0;
+  let totalFaturado = 0;
+
+  for (const loan of active) {
+    const totals = computeLoanTotals(loan);
+    const principal = loan.loanAmount || 0;
+
+    // totais.totalAll = soma de todas as parcelas (totalToReceive arredondado via parcelas)
+    const totalAll = totals.totalAll || 0;
+    const totalPaid = totals.totalPaid || 0;
+    const remaining = totals.remaining || 0;
+
+    // Juros totais = (totalToReceive - principal)
+    const jurosTotal = totals.jurosTotal || 0;
+
+    // percentual do valor total que já foi quitado
+    const paidRatio = totalAll > 0 ? (totalPaid / totalAll) : 0;
+
+    // principal consumido proporcional ao valor total quitado
+    const principalPaid = principal * paidRatio;
+    const principalRemaining = principal - principalPaid;
+
+    // juros restantes proporcionalmente ao que não foi quitado
+    const jurosRemaining = jurosTotal * (1 - paidRatio);
+
+    totalEmprestadoAtivo += Math.max(0, principalRemaining);
+    totalJurosPendentes += Math.max(0, jurosRemaining);
+    totalGeralAReceber += remaining;
+  }
+
+  for (const loan of allLoans) {
+    const totals = computeLoanTotals(loan);
+    totalFaturado += totals.totalPaid;
+  }
+
+  return {
+    totalEmprestadoAtivo,
+    totalJurosPendentes,
+    totalGeralAReceber,
+    totalFaturado
+  };
+}
+
+/* =========================
+   Render cards + WhatsApp (ajustado phone)
+========================= */
+function loanToCardHTML(loan) {
+  const next = findNextUnpaidParcel(loan);
+  const now = new Date();
+  const status = classifyParcelStatus(next, now);
+
+  const statusTag = (() => {
+    const base = "inline-flex items-center px-2 py-1 rounded-lg text-xs font-extrabold";
+    if (status === "overdue")
+      return `<span class="${base} bg-red-500/20 text-red-200 border border-red-500/40">🚨 Vencido</span>`;
+    if (status === "soon")
+      return `<span class="${base} bg-yellow-400/20 text-yellow-200 border border-yellow-400/40">⚠️ Próximo</span>`;
+    if (status === "ontime")
+      return `<span class="${base} bg-emerald-500/20 text-emerald-200 border border-emerald-500/40">✅ No Prazo</span>`;
+    return `<span class="${base} bg-slate-700 text-slate-200 border border-slate-700">—</span>`;
+  })();
+
+  const parcelaLabel = next ? `Parcela ${next.index}/${loan.parcelCount}` : `Quitado`;
+  const parcelaValue = next ? next.amount : 0;
+  const dueISO = next ? next.dueDateISO : "-";
+
+  return `
+    <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h3 class="font-extrabold text-slate-100 text-base truncate">${escapeHtml(loan.debtorName || "")}</h3>
+          <p class="text-sm text-slate-400 mt-1">
+            Empréstimo em <span class="text-slate-200 font-semibold">${loan.loanDateISO}</span>
+          </p>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            ${statusTag}
+            <span class="text-xs text-slate-400">
+              ${parcelaLabel} - <span class="text-emerald-300 font-extrabold">${formatCurrencyBRL(parcelaValue)}</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <p class="text-xs text-slate-400">Total</p>
+          <p class="text-lg font-extrabold text-slate-100">${formatCurrencyBRL(loan.totalToReceive || 0)}</p>
+          <p class="text-xs text-slate-500 mt-1">Juros: ${loan.interestRatePercent}%</p>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-xl border border-slate-800 bg-slate-900/30 p-3">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-sm text-slate-400">Data da Parcela Atual</p>
+          <p class="text-sm font-bold text-emerald-200">${dueISO}</p>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <button data-action="quit" data-id="${loan.id}"
+          class="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-sm">
+          Quitar Parcela
+        </button>
+
+        <a href="#" data-action="whats" data-id="${loan.id}"
+          class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-bold text-sm text-center">
+          Cobrar via WhatsApp
+        </a>
+
+        <button data-action="delete" data-id="${loan.id}"
+          class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-red-500/40 text-slate-100 font-bold text-sm">
+          Excluir
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderActiveLoans() {
+  const q = (document.getElementById("searchInput").value || "").trim().toLowerCase();
+  const now = new Date();
+
+  const filtered = allLoans
+    .filter(l => !isLoanFullyPaid(l))
+    .filter(l => !q || String(l.debtorName || "").toLowerCase().includes(q))
+    .filter(l => {
+      const next = findNextUnpaidParcel(l);
+      const status = classifyParcelStatus(next, now);
+      if (currentFilter === "all") return true;
+      if (currentFilter === "ontime") return status === "ontime";
+      if (currentFilter === "soon") return status === "soon";
+      if (currentFilter === "overdue") return status === "overdue";
+      return true;
+    });
+
+  loansGrid.innerHTML = filtered.map(loanToCardHTML).join("") || "";
+  activeCount.textContent = String(filtered.length);
+  emptyState.classList.toggle("hidden", filtered.length !== 0);
+
+  loansGrid.querySelectorAll("[data-action]").forEach(el => {
+    const action = el.dataset.action;
+    const id = el.dataset.id;
+
+    if (action === "quit") {
+      el.addEventListener("click", () => quitNextParcel(id));
+    }
+
+    if (action === "delete") {
+      el.addEventListener("click", () => deleteLoan(id));
+    }
+
+    if (action === "whats") {
+      el.addEventListener("click", (ev) => {
+        ev.preventDefault();
+
+        const loan = allLoans.find(x => x.id === id);
+        if (!loan) return;
+
+        const next = findNextUnpaidParcel(loan);
+        if (!next) return;
+
+        // --- WhatsApp: normaliza com/sem DDI ---
+        const phoneDigits = normalizePhoneForWhatsApp(loan.debtorPhone, "55");
+        const amountText = formatAmountBR(next.amount);
+        const dueISO = next.dueDateISO;
+
+        const msg =
+          `Olá, ${loan.debtorName}! Passando para lembrar que a sua parcela do empréstimo no valor de R$ ${amountText} vence no dia ${dueISO}. Qualquer dúvida estou à disposição.`;
+
+        const url = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(msg)}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+    }
+  });
+}
+
+function renderHistory() {
+  const quitados = allLoans.filter(l => isLoanFullyPaid(l));
+  historyCount.textContent = String(quitados.length);
+  historyEmpty.classList.toggle("hidden", quitados.length !== 0);
+
+  historyGrid.innerHTML = quitados.map(loan => {
+    const totals = computeLoanTotals(loan);
+    const jurosRecebidos = Math.max(0, totals.totalPaid - (loan.loanAmount || 0));
+    return `
+      <article class="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="font-extrabold text-slate-100 text-base truncate">${escapeHtml(loan.debtorName || "")}</h3>
+            <p class="text-sm text-slate-400 mt-1">Empréstimo em <span class="text-slate-200 font-semibold">${loan.loanDateISO}</span></p>
+            <div class="mt-2">
+              <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-extrabold bg-emerald-500/20 text-emerald-200 border border-emerald-500/40">
+                ✅ Quitado
+              </span>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-slate-400">Total Recebido</p>
+            <p class="text-lg font-extrabold text-slate-100">${formatCurrencyBRL(totals.totalPaid)}</p>
+          </div>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-slate-800 bg-slate-900/30 p-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-slate-400">Juros</p>
+            <p class="text-sm font-bold text-emerald-200">${formatCurrencyBRL(jurosRecebidos)}</p>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("") || "";
+}
+
+function renderAll() {
+  const stats = calcDashboardStats();
+  document.getElementById("cardTotalEmprestado").textContent = formatCurrencyBRL(stats.totalEmprestadoAtivo);
+  document.getElementById("cardTotalJuros").textContent = formatCurrencyBRL(stats.totalJurosPendentes);
+  document.getElementById("cardTotalGeral").textContent = formatCurrencyBRL(stats.totalGeralAReceber);
+  document.getElementById("cardTotalFaturado").textContent = formatCurrencyBRL(stats.totalFaturado);
+
+  renderActiveLoans();
+  renderHistory();
+}
+
+/* =========================
+   Cadastro + Parcelas
+========================= */
+async function handleCreateLoan(e) {
+  e.preventDefault();
+
+  const name = (debtorName.value || "").trim();
+  const phoneRaw = (debtorPhone.value || "").trim(); // guarda como veio (com/sem +)
+  const amount = moneyToNumber(loanAmount.value);
+  const dateISO = loanDate.value;
+  const rate = Number(loanInterestRate.value || 0);
+  const count = Number(parcelCount.value || 1);
+
+  if (!name) return showFormError("Informe o nome do devedor.");
+  if (!phoneRaw) return showFormError("Informe o telefone do devedor.");
+  if (!(amount > 0)) return showFormError("Informe um valor emprestado maior que zero.");
+  if (!dateISO) return showFormError("Informe a data do empréstimo.");
+
+  const totalToReceive = roundMoney(amount + amount * (rate / 100));
+  const parcelValue = count > 0 ? roundMoney(totalToReceive / count) : 0;
+
+  const baseDate = parseDateFromISO(dateISO);
+  const parcels = [];
+  for (let i = 1; i <= count; i++) {
+    const due = addDaysLocal(baseDate, 30 * i);
+    parcels.push({
+      index: i,
+      dueDateISO: toISODateLocal(due),
+      amount: parcelValue,
+      paid: false,
+      paidAtISO: null
+    });
+  }
+
+  // Ajuste final por arredondamento na última parcela (para bater totalToReceive)
+  const sumParcels = parcels.reduce((s, p) => s + p.amount, 0);
+  const diff = roundMoney(totalToReceive - sumParcels);
+  if (parcels.length > 0 && Math.abs(diff) >= 0.01) {
+    parcels[parcels.length - 1].amount = roundMoney(parcels[parcels.length - 1].amount + diff);
+  }
+
+  const loan = {
+    id: uuid(),
+    debtorName: name,
+    debtorPhone: phoneRaw,
+    loanAmount: roundMoney(amount),
+    loanDateISO: dateISO,
+    interestRatePercent: rate,
+    parcelCount: count,
+    totalToReceive,
+    parcelValue,
+    parcels,
+    createdAtISO: new Date().toISOString()
+  };
+
+  allLoans.unshift(loan);
+  saveLoans(allLoans);
+
+  formMessage.classList.remove("hidden");
+  formMessage.className = "text-sm text-emerald-300 mt-1";
+  formMessage.textContent = "Empréstimo cadastrado com sucesso!";
+
+  resetForm();
+  renderAll();
+}
+
+/* =========================
+   Ações individuais
+========================= */
+function quitNextParcel(loanId) {
+  const loan = allLoans.find(l => l.id === loanId);
+  if (!loan) return;
+
+  const next = findNextUnpaidParcel(loan);
+  if (!next) {
+    showToast("Este empréstimo já está quitado.", "err");
+    renderAll();
+    return;
+  }
+
+  next.paid = true;
+  next.paidAtISO = new Date().toISOString();
+
+  saveLoans(allLoans);
+  showToast("Parcela quitada com sucesso.", "ok");
+  renderAll();
+}
+
+function deleteLoan(loanId) {
+  const loan = allLoans.find(l => l.id === loanId);
+  if (!loan) return;
+
+  if (!confirm(`Excluir o registro de "${loan.debtorName}"? Esta ação é permanente.`)) return;
+
+  allLoans = allLoans.filter(l => l.id !== loanId);
+  saveLoans(allLoans);
+  showToast("Registro excluído.", "ok");
+  renderAll();
+}
+
+/* =========================
+   Global actions (storage)
+========================= */
+function setupGlobalActions() {
+  document.getElementById("btnLogout").addEventListener("click", () => {
+    app.classList.add("hidden");
+    loginScreen.classList.remove("hidden");
+    loginPass.value = "";
+    createPass.value = "";
+    confirmPass.value = "";
+    showLoginMessage("", "ok");
+    initLogin();
+  });
+
+  document.getElementById("btnClearAll").addEventListener("click", () => {
+    const ok = confirm("Tem certeza? Isso apagará TODOS os registros do AGT neste navegador.");
+    if (!ok) return;
+
+    localStorage.removeItem(STORAGE_KEYS.LOANS);
+    localStorage.removeItem(STORAGE_KEYS.PASSWORD_HASH);
+
+    allLoans = [];
+    app.classList.add("hidden");
+    loginScreen.classList.remove("hidden");
+    initLogin();
+    showToast("Registros apagados.", "ok");
+  });
+
+  document.getElementById("btnExport").addEventListener("click", () => {
+    const payload = { version: 1, exportedAtISO: new Date().toISOString(), loans: allLoans };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `AGT-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("importFile").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const ok = confirm("Importar backup irá substituir os dados atuais. Deseja continuar?");
+    if (!ok) { e.target.value = ""; return; }
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const importedLoans = data && Array.isArray(data.loans) ? data.loans : Array.isArray(data) ? data : null;
+      if (!importedLoans) throw new Error("Formato inválido.");
+
+      // Sanitização mínima
+      allLoans = importedLoans.map(l => ({
+        ...l,
+        parcels: Array.isArray(l.parcels) ? l.parcels : []
+      }));
+
+      saveLoans(allLoans);
+      e.target.value = "";
+      renderAll();
+      showToast("Backup importado com sucesso.", "ok");
+    } catch (err) {
+      showToast("Erro ao importar backup: formato inválido.", "err");
+      console.error(err);
+      e.target.value = "";
+    }
+  });
+
+  document.getElementById("btnSeedDemo").addEventListener("click", () => {
+    const ok = confirm("Inserir exemplo? Isso adicionará (não substituirá) registros atuais.");
+    if (!ok) return;
+
+    insertDemoData();
+    renderAll();
+  });
+
+  toggleHistory.addEventListener("click", () => {
+    const isHidden = historyPanel.classList.contains("hidden");
+    historyPanel.classList.toggle("hidden");
+    historyChevron.textContent = isHidden ? "˄" : "˅";
+    if (!historyPanel.classList.contains("hidden")) renderHistory();
+  });
+
+  document.getElementById("searchInput").addEventListener("input", renderActiveLoans);
+
+  document.querySelectorAll(".filterBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentFilter = btn.dataset.filter || "all";
+
+      document.querySelectorAll(".filterBtn").forEach(b => {
+        b.classList.remove("ring-2", "ring-emerald-400", "bg-emerald-500", "border-emerald-500");
+        b.classList.add("bg-slate-800");
+      });
+      btn.classList.add("ring-2", "ring-emerald-400", "bg-emerald-500", "border-emerald-500");
+      renderActiveLoans();
+    });
+  });
+
+  const btnAll = document.querySelector('.filterBtn[data-filter="all"]');
+  if (btnAll) btnAll.click();
+}
+
+function insertDemoData() {
+  const todayISO = toISODateLocal(new Date());
+  const base = parseDateFromISO(todayISO);
+
+  function mk(name, phone, amount, daysAgo, rate, count) {
+    const d = addDaysLocal(base, -daysAgo);
+    const iso = toISODateLocal(d);
+
+    const totalToReceive = roundMoney(amount + amount * (rate / 100));
+    const parcelValue = roundMoney(totalToReceive / count);
+
+    const parcels = [];
+    const baseDate = parseDateFromISO(iso);
+    for (let i = 1; i <= count; i++) {
+      const due = addDaysLocal(baseDate, 30 * i);
+      parcels.push({
+        index: i,
+        dueDateISO: toISODateLocal(due),
+        amount: parcelValue,
+        paid: false,
+        paidAtISO: null
+      });
+    }
+
+    const sumParcels = parcels.reduce((s, p) => s + p.amount, 0);
+    const diff = roundMoney(totalToReceive - sumParcels);
+    if (parcels.length && Math.abs(diff) >= 0.01) {
+      parcels[parcels.length - 1].amount = roundMoney(parcels[parcels.length - 1].amount + diff);
+    }
+
+    return {
+      id: uuid(),
+      debtorName: name,
+      debtorPhone: phone,
+      loanAmount: amount,
+      loanDateISO: iso,
+      interestRatePercent: rate,
+      parcelCount: count,
+      totalToReceive,
+      parcelValue,
+      parcels,
+      createdAtISO: new Date().toISOString()
+    };
+  }
+
+  const demoLoans = [
+    mk("Marcos Pereira", "11987654321", 1000, 25, 20, 3),
+    mk("Ana Souza", "+55 21 99999-0000", 1500, 45, 25, 4)
+  ];
+
+  allLoans = loadLoans();
+  allLoans.unshift(...demoLoans);
+  saveLoans(allLoans);
+}
+
+/* =========================
+   Bootstrap after auth
+========================= */
+function startAppAfterAuth() {
+  loginScreen.classList.add("hidden");
+  app.classList.remove("hidden");
+
+  setFormDefaultDate();
+  updatePreviews();
+
+  // Carrega dados
+  allLoans = loadLoans();
+
+  // Events
+  loanForm.addEventListener("submit", handleCreateLoan);
+
+  debtorPhone.addEventListener("input", () => {
+    // Não removemos tudo aqui: queremos permitir + e espaços para DDI.
+    // Apenas evitamos caracteres absurdos: mantemos + e números.
+    // (WhatsApp normaliza depois.)
+    debtorPhone.value = (debtorPhone.value || "").replace(/[^\d+\s()-]/g, "");
+  });
+
+  [loanAmount, loanInterestRate, parcelCount, loanDate].forEach(el => {
+    el.addEventListener("input", updatePreviews);
+    el.addEventListener("change", updatePreviews);
+  });
+
+  setupGlobalActions();
+  renderAll();
+}
+
+/* =========================
+   Init
+========================= */
+initLogin();
+</script>
+</body>
+</html>
